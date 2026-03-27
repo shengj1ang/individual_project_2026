@@ -1,36 +1,33 @@
 #include <Arduino.h>
 
-#define FW_VERSION "v1.0.1"
+#define FW_VERSION "v2.0.0"
 
-static const uint8_t PWM_PINS[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-static const uint8_t NUM_PWM = sizeof(PWM_PINS) / sizeof(PWM_PINS[0]);
+static const uint8_t PWM_PINS[10] = {0,1,2,3,4,5,6,7,8,9};
+static const uint8_t NUM_PWM = 10;
 
-static const uint16_t ALL_MASK = (1u << NUM_PWM) - 1u;
 static const uint32_t DEFAULT_PWM_FREQ = 300;
 
+// ===== motor task state =====
+struct MotorTask {
+  bool active;
+  uint8_t amp;
+  uint16_t remaining;   // pulses left
+  uint32_t on_ms;
+  uint32_t off_ms;
+
+  bool state_on;
+  uint32_t next_ts;
+};
+
+static MotorTask motors[NUM_PWM];
+
+// ===== serial buffer =====
 static char lineBuf[128];
 static uint8_t lineLen = 0;
 static bool overflow = false;
 
-static uint16_t currentMask = 0;
-static uint8_t currentAmp = 0;
 
-// Apply a full output mask atomically
-static inline void applyMask(uint16_t mask, uint8_t amp) {
-  mask &= ALL_MASK;
-  for (uint8_t i = 0; i < NUM_PWM; i++) {
-    analogWrite(PWM_PINS[i], (mask & (1u << i)) ? amp : 0);
-  }
-  currentMask = mask;
-  currentAmp = amp;
-}
-
-// Stop all outputs
-static inline void stopAll() {
-  applyMask(0, 0);
-}
-
-// Initialize all PWM pins to a safe output-low state
+// ===== init pins =====
 static void initPins() {
   for (uint8_t i = 0; i < NUM_PWM; i++) {
     pinMode(PWM_PINS[i], OUTPUT);
@@ -39,7 +36,7 @@ static void initPins() {
   }
 }
 
-// Set default PWM frequency on all channels
+// ===== default freq =====
 static void initDefaultFrequencies() {
   #if defined(TEENSYDUINO)
     for (uint8_t i = 0; i < NUM_PWM; i++) {
@@ -48,7 +45,63 @@ static void initDefaultFrequencies() {
   #endif
 }
 
-// Read one full line from serial
+// ===== stop all =====
+static void stopAll() {
+  for (uint8_t i = 0; i < NUM_PWM; i++) {
+    motors[i].active = false;
+    analogWrite(PWM_PINS[i], 0);
+  }
+}
+
+// ===== schedule motor task =====
+static void startTask(uint8_t idx, uint16_t count, uint8_t amp, uint32_t on_ms, uint32_t off_ms) {
+  if (idx >= NUM_PWM) return;
+
+  MotorTask &m = motors[idx];
+
+  m.active = true;
+  m.amp = amp;
+  m.remaining = count;
+  m.on_ms = on_ms;
+  m.off_ms = off_ms;
+
+  m.state_on = true;
+  m.next_ts = millis() + on_ms;
+
+  analogWrite(PWM_PINS[idx], amp);
+}
+
+// ===== scheduler =====
+static void updateMotors() {
+  uint32_t now = millis();
+
+  for (uint8_t i = 0; i < NUM_PWM; i++) {
+    MotorTask &m = motors[i];
+
+    if (!m.active) continue;
+
+    if (now < m.next_ts) continue;
+
+    if (m.state_on) {
+      // turn off
+      analogWrite(PWM_PINS[i], 0);
+      m.state_on = false;
+      m.next_ts = now + m.off_ms;
+      m.remaining--;
+
+      if (m.remaining == 0) {
+        m.active = false;
+      }
+    } else {
+      // turn on again
+      analogWrite(PWM_PINS[i], m.amp);
+      m.state_on = true;
+      m.next_ts = now + m.on_ms;
+    }
+  }
+}
+
+// ===== read line =====
 static bool readLine() {
   while (Serial.available() > 0) {
     char c = (char)Serial.read();
@@ -75,47 +128,51 @@ static bool readLine() {
   return false;
 }
 
-// Skip leading spaces/tabs
-static inline char* skipSpaces(char* p) {
+static char* skipSpaces(char* p) {
   while (*p == ' ' || *p == '\t') p++;
   return p;
 }
 
-// Handle command: X
-static void handleStop() {
-  stopAll();
+// ===== commands =====
+
+static void handleEcho() {
+  Serial.print("E ");
+  Serial.println(FW_VERSION);
 }
 
-// Handle command: S mask amp
-static void handleStart(char* p) {
-  long mask, amp;
-  if (sscanf(p, "%ld %ld", &mask, &amp) == 2) {
-    if (mask >= 0 && mask <= (long)ALL_MASK && amp >= 0 && amp <= 255) {
-      applyMask((uint16_t)mask, (uint8_t)amp);
+// P idx count amp on off
+static void handlePulse(char* p) {
+  long idx, count, amp, on_ms, off_ms;
+
+  if (sscanf(p, "%ld %ld %ld %ld %ld",
+             &idx, &count, &amp, &on_ms, &off_ms) == 5) {
+
+    if (idx >= 0 && idx < NUM_PWM &&
+        count > 0 &&
+        amp >= 0 && amp <= 255) {
+
+      startTask((uint8_t)idx,
+                (uint16_t)count,
+                (uint8_t)amp,
+                (uint32_t)on_ms,
+                (uint32_t)off_ms);
     }
   }
 }
 
-// Handle command: F f0 f1 ... f9
-static void handleFreq(char* p) {
-  long f[10];
-  if (sscanf(p, "%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld",
-             &f[0], &f[1], &f[2], &f[3], &f[4],
-             &f[5], &f[6], &f[7], &f[8], &f[9]) == 10) {
-    #if defined(TEENSYDUINO)
-      for (uint8_t i = 0; i < NUM_PWM; i++) {
-        if (f[i] > 0) {
-          analogWriteFrequency(PWM_PINS[i], (float)f[i]);
-        }
+// optional: keep old S
+static void handleImmediate(char* p) {
+  long mask, amp;
+  if (sscanf(p, "%ld %ld", &mask, &amp) == 2) {
+    for (uint8_t i = 0; i < NUM_PWM; i++) {
+      if (mask & (1 << i)) {
+        analogWrite(PWM_PINS[i], amp);
+      } else {
+        analogWrite(PWM_PINS[i], 0);
       }
-    #endif
+      motors[i].active = false;
+    }
   }
-}
-
-// Handle command: E
-static void handleEcho() {
-  Serial.print("E ");
-  Serial.println(FW_VERSION);
 }
 
 void setup() {
@@ -127,6 +184,8 @@ void setup() {
 }
 
 void loop() {
+  updateMotors();  
+
   if (!readLine()) return;
 
   char* p = skipSpaces(lineBuf);
@@ -136,17 +195,7 @@ void loop() {
   p = skipSpaces(p);
 
   if (cmd == 'X') {
-    handleStop();
-    return;
-  }
-
-  if (cmd == 'S') {
-    handleStart(p);
-    return;
-  }
-
-  if (cmd == 'F') {
-    handleFreq(p);
+    stopAll();
     return;
   }
 
@@ -155,5 +204,13 @@ void loop() {
     return;
   }
 
-  // Unknown command: ignore
+  if (cmd == 'P') {
+    handlePulse(p);
+    return;
+  }
+
+  if (cmd == 'S') {
+    handleImmediate(p);
+    return;
+  }
 }

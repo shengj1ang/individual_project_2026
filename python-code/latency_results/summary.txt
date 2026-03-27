@@ -1,0 +1,31 @@
+Latency Measurement Summary
+===========================
+
+Runs: 18
+Motors tested: [0, 2, 6]
+Mean: 27.59 ms
+Std:  20.45 ms
+Min:  4.98 ms
+Max:  77.76 ms
+
+Motor 0
+  Count: 5
+  Mean:  21.10 ms
+  Std:   17.23 ms
+  Min:   4.98 ms
+  Max:   44.72 ms
+
+Motor 2
+  Count: 7
+  Mean:  29.20 ms
+  Std:   18.66 ms
+  Min:   4.99 ms
+  Max:   61.07 ms
+
+Motor 6
+  Count: 6
+  Mean:  31.13 ms
+  Std:   23.46 ms
+  Min:   8.53 ms
+  Max:   77.76 ms
+

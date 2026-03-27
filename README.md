@@ -1,164 +1,193 @@
-# Overview
+# Multi-Channel Vibration Control System
 
-This project provides a simple multi-channel vibration controller using an Arduino-compatible board and a Python interface.
+This project implements a complete system for controlling multiple vibration motors using an Arduino-compatible board (e.g. Teensy) and Python.
 
-It allows controlling up to 10 PWM outputs via a serial connection, using a minimal text-based protocol.
+It includes:
+- asynchronous multi-motor control firmware
+- Python control interface
+- real-time keyboard control
+- audio-based latency measurement
+- automatic data analysis and visualization
 
-The system is designed for:
+---
 
-	•	Quick testing of vibration motors
-    
-	•	Simple pattern playback
-    
-	•	Reliable and deterministic control
+## Project Structure
+```
+
+root/
+├── teensy_driver/       # Arduino / Teensy firmware
+├── python-code/         # Python control and analysis tools
+├── README.md
 
 
-# Architecture
-The system consists of two main parts:
+```
 
-	•	Arduino Firmware → handles PWM output and command parsing
-    
-	•	Python Controller → sends commands and provides higher-level control
-    
-  
-# Arduino Firmware
-The Arduino firmware implements a simple serial command parser and a stateless output model.
+---
 
-All PWM outputs are controlled using a bitmask, where each bit represents one motor channel.
+## Arduino Firmware (teensy_driver)
 
-Key Design
+The firmware runs on the microcontroller and handles:
 
-	•	All PWM pins are initialized as outputs at startup to ensure a stable state
-    
-	•	Default PWM frequency is set to 300 Hz (if supported by the platform)
-    
-	•	Every command fully overwrites the current output state
-    
-	•	No internal scheduling or task queue is used
+- PWM output for up to 10 motors  
+- non-blocking scheduling (each motor runs independently)  
+- serial command parsing  
 
-This keeps the firmware:
+### Key Design
 
-	•	deterministic
-    
-	•	easy to debug
-    
-	•	resistant to partial command loss
+- Each motor has its own state machine  
+- No blocking delay is used  
+- Multiple motors can run different patterns simultaneously  
 
-## Supported Commands
-
-### Stop all outputs
+### Supported Commands
 ```
 X
-```
-### Set outputs
-```
-S <mask> <amp>
-```
+→ stop all motors
 
-	•	mask: bitmask (0–1023 for 10 channels)
-    
-	•	amp: PWM value (0–255)
-    
-   Example: enables channels 0,1,2
-```
-S 7 80
-```
-
-### Set PWM frequency (optional, platform dependent)
-```
-F f0 f1 f2 f3 f4 f5 f6 f7 f8 f9
-```
-### Echo firmware version
-```
 E
+→ return firmware version
+
+P    <on_ms> <off_ms>
+→ run pulse task on one motor
+
+S  
+→ immediate override (debug / manual control)
 ```
-Response:
+---
+
+## Python Code (python-code)
+
+This folder contains all control, testing, and analysis scripts.
+
+---
+
+## File Overview
+
+### controller.py
+
+High-level interface for communicating with the device.
+
+Provides:
+- connection handling
+- command sending
+- pulse control
+- async motor triggering
+
+---
+
+### serial_utils.py
+
+Handles serial port detection and initialization.
+
+Features:
+- automatic port selection (macOS / Linux / Windows)
+- fallback to manual selection when needed
+
+---
+
+### demo_async.py
+
+Demonstrates asynchronous motor control.
+
+- starts one motor
+- injects additional motors while it is still running
+- shows non-blocking behavior
+
+---
+
+### demo_keyboard_control.py
+
+Real-time keyboard control.
+
+- maps keys (A–;) to motors (0–9)
+- supports multiple simultaneous key presses
+- uses `S mask` for real-time control
+
+---
+
+### detect_live_motor.py
+
+Real-time microphone-based detection tool.
+
+- continuously monitors audio input
+- detects vibration presence
+- helps tune detection parameters (threshold, frequency band)
+
+---
+
+### measure_latency.py
+
+Single-motor latency measurement.
+
+- triggers motor once
+- detects acoustic onset
+- estimates end-to-end latency
+
+---
+
+### measure_latency_multi_motor.py
+
+Advanced latency measurement (multi-motor version).
+
+Features:
+- random motor selection (configurable)
+- multiple runs (statistical analysis)
+- per-motor latency comparison
+- automatic plotting and saving
+
+---
+
+## Latency Measurement
+
+Latency is estimated using:
+
+1. Send command via serial  
+2. Motor starts vibrating  
+3. Microphone detects vibration sound  
+4. Compute time difference  
+
+This includes:
+- serial transmission delay  
+- MCU execution time  
+- motor response time  
+- acoustic propagation  
+- audio capture latency  
+
+---
+
+## Output (latency_results)
+
+Running the measurement script generates:
 ```
-E v1.0.1
+latency_results/
+├── latency_by_run.png
+├── latency_grouped_by_motor.png
+├── latency_histogram.png
+├── summary.txt
 ```
+---
 
-# Python Controller
+## Configuration
 
-The Python side provides a higher-level interface for interacting with the device.
+In `measure_latency_multi_motor.py`:
 
-Features
+```python
+TEST_MOTORS = [0, 2, 6]
+NUM_RUNS = 20
 
-	•	Automatic serial port detection
-    
-	•	Simple command wrapper
-    
-	•	Motor-by-motor testing
-    
-	•	Pattern playback utilities
-
-Example Usage
-
-```
-from vibrator import VibratorController
-
-with VibratorController() as vc:
-    print(vc.echo())
-
-    vc.set_all_freqs([300] * 10)
-
-    # single motor
-    vc.pulse_motor(0, amp=80, on_ms=120)
-
-    # multiple motors
-    vc.pulse_mask(1023, amp=80, on_ms=150)
-
-    # test all motors
-    vc.test_all_one_by_one()
-```
-
-# Design Notes
-
-This version uses a stateless control model:
-
-Each S command replaces the entire output state.
-
-This means:
-
-	•	Commands are simple and predictable
-    
-	•	There is no internal task queue
-    
-	•	Complex overlapping patterns must be handled on the Python side
-
-This is intentional for:
-
-	•	robustness
-    
-	•	simplicity
-    
-	•	easier debugging
+You can modify:
+	•	which motors to test
+	•	number of runs
+	•	detection parameters
 
 ⸻
 
-Limitations
+Notes
+	•	Using pins 0 and 1 may conflict with serial on some boards
+	•	Ensure power supply is sufficient for multiple motors
+	•	Microphone positioning significantly affects measurement accuracy
+Version
 
-	•	No independent per-motor scheduling
-    
-	•	No queued vibration patterns
-    
-	•	New commands override previous states
-
-Future versions may introduce:
-
-	•	per-channel task scheduling
-    
-	•	asynchronous pattern execution
-    
-	•	additive control modes
-
-⸻
-
-# Hardware Notes
-
-If using pins 0 and 1, be aware that they may conflict with the hardware serial interface on some boards.
-
-For best stability, consider using higher-numbered GPIO pins.
-
-Also ensure your power supply can handle multiple motors running simultaneously.
-
-
+Current version includes:
+	•	async firmware
+	•	Python control layer
+	•	measurement + visualization pipeline
