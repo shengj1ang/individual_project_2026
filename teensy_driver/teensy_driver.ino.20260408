@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include "motor_driver.h"
 #include "LED_array.h"
-#include "accel_driver.h"
 
 #define FW_VERSION "v2.1.0"
 
@@ -54,14 +53,12 @@ void setup() {
 
   motorInit();
   ledInit();
-  accelInit();
 }
 
 void loop() {
   // Non-blocking updates
   updateMotors();
   updateLEDs();
-  updateAccelerometer();
 
   if (!readLine()) return;
 
@@ -92,13 +89,6 @@ void loop() {
     return;
   }
 
-
-  // ===== accelerometer =====
-  // A HELP | A WHOAMI | A READ | A START [interval_ms] | A STOP | A RATE interval_ms | A STATUS
-  if (cmd == 'A') {
-    handleAccelCommand(p);
-    return;
-  }
   // ===== LED =====
   // L strip idx r g b brightness
   if (cmd == 'L') {
