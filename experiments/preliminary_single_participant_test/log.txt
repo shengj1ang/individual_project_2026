@@ -1,0 +1,43 @@
+Using Visual and vibrotactile guidance
+Trials: 20
+Accuracy: 20/20 = 100.0%
+Mean RT: 0.694s
+
+Trials: 20
+Accuracy: 20/20 = 100.0%
+Mean RT: 0.667s
+
+Trials: 20
+Accuracy: 19/20 = 95.0%
+Mean RT: 0.600s
+
+Trials: 20
+Accuracy: 20/20 = 100.0%
+Mean RT: 0.698s
+
+Trials: 20
+Accuracy: 20/20 = 100.0%
+Mean RT: 0.610s
+
+
+Visual Only
+
+Trials: 20
+Accuracy: 95.0%
+Mean RT: 2.302s
+
+Trials: 20
+Accuracy: 95.0%
+Mean RT: 2.391s
+
+Trials: 20
+Accuracy: 100.0%
+Mean RT: 1.708s
+
+Trials: 20
+Accuracy: 90.0%
+Mean RT: 2.354s
+
+Trials: 20
+Accuracy: 100.0%
+Mean RT: 2.462s

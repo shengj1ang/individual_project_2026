@@ -1,0 +1,5 @@
+n,mean_x,mean_y,mean_diff_x_minus_y,sd_diff,cohens_dz,t_stat,t_p,wilcoxon_stat,wilcoxon_p,sign_p,sign_pos,sign_neg,metric,label
+5,276.9805961288512,281.6485360016426,-4.667939872791368,21.451809754448917,-0.21760121529248963,-0.4865711093805735,0.6520192052005973,5.0,0.625,0.375,1.0,4.0,mean_rt_ms_valid,"Reaction time (ms, valid only)"
+5,1.0,1.0,0.0,0.0,,,,0.0,1.0,,0.0,0.0,accuracy,Accuracy
+5,0.0,0.0,0.0,0.0,,,,0.0,1.0,,0.0,0.0,miss_rate,Miss rate
+5,0.0,0.026666666666666665,-0.026666666666666665,0.03651483716701107,-0.7302967433402214,-1.6329931618554518,0.17780780835622126,0.0,0.5,0.5,0.0,2.0,mean_false_starts,False starts per trial

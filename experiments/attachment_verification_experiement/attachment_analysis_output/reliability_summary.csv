@@ -1,0 +1,7 @@
+actuator_type,attachment_method,n,mean_failure_cycle,median_failure_cycle,never_fell_off
+ERM,eyelash_glue,1,0.0,0.0,1
+ERM,putty,1,0.0,0.0,1
+ERM,tape,1,0.0,0.0,1
+LRA,eyelash_glue,1,0.0,0.0,1
+LRA,putty,1,0.0,0.0,1
+LRA,tape,1,0.0,0.0,1

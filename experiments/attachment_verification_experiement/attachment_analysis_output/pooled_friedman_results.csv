@@ -1,0 +1,4 @@
+metric,n_blocks,statistic,p_value
+mean_peak_delta,2,0.0,1.0
+mean_rms_delta,2,0.0,1.0
+mean_onset_delay_ms,2,3.0,0.22313016014842982

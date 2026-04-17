@@ -1,0 +1,11 @@
+participant_id,actuator_type,clarity,comfort,responsiveness,satisfaction,overall_mean_rating
+1,LRA,5.0,5.0,4.0,5.0,4.75
+1,ERM,4.0,3.0,3.0,4.0,3.5
+2,LRA,4.0,4.0,4.0,4.0,4.0
+2,ERM,3.0,3.0,3.0,3.0,3.0
+3,LRA,5.0,5.0,5.0,5.0,5.0
+3,ERM,4.0,3.0,4.0,3.0,3.5
+4,LRA,4.0,5.0,4.0,4.0,4.25
+4,ERM,4.0,3.0,3.0,3.0,3.25
+5,LRA,3.0,4.0,4.0,4.0,3.75
+5,ERM,3.0,3.0,3.0,2.0,2.75

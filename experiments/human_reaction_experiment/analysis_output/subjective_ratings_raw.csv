@@ -1,0 +1,11 @@
+id,participant_id,actuator_type,clarity,comfort,responsiveness,satisfaction,notes,created_at
+1,1,LRA,5,5,4,5,ok,2026-04-16 09:37:23
+2,1,ERM,4,3,3,4,Repetitive vibrations cause the temperature to rise.,2026-04-16 09:39:30
+3,2,LRA,4,4,4,4,,2026-04-16 09:41:23
+4,2,ERM,3,3,3,3,,2026-04-16 09:42:46
+5,3,LRA,5,5,5,5,,2026-04-16 09:44:15
+6,3,ERM,4,3,4,3,,2026-04-16 09:45:34
+7,4,LRA,4,5,4,4,,2026-04-16 09:47:00
+8,4,ERM,4,3,3,3,,2026-04-16 09:48:17
+9,5,LRA,3,4,4,4,,2026-04-16 09:49:42
+10,5,ERM,3,3,3,2,,2026-04-16 09:50:50
